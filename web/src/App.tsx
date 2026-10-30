@@ -1,19 +1,23 @@
 // 文件作用：应用主界面与游戏流程编排。
 //
 // 结构：
-//   顶部（品牌 + 网络 + 钱包）→ 左侧棋盘区（关卡信息、棋盘、操作、提交）→ 右侧信息区（我的成绩、排行榜、说明）
+//   顶部（品牌 + 语言 + 网络 + 钱包）→ 左侧棋盘区（关卡信息、棋盘、操作、提交）→ 右侧信息区（我的成绩、排行榜、说明）
 //
 // 关键流程：
 //   1. usePuzzle 拉取当前关卡（合约 board()）与排行榜；
 //   2. 玩家在本地用 game.ts 的规则走棋，本地状态完全独立于链；
 //   3. 通关后用一笔交易提交整条路径，合约重放校验并记录步数；
 //   4. 关卡编号变化（已认证轮次跨过 48 的倍数）时自动重置棋盘。
+//
+// 国际化：所有文案走 useI18n() 的 t()，不要在 JSX 里直接写中文或英文。
 import { useCallback, useEffect, useState } from "react";
 import { Board } from "./components/Board";
 import { ConnectButton } from "./components/ConnectButton";
 import { Dpad } from "./components/Dpad";
+import { LangToggle } from "./components/LangToggle";
 import { Leaderboard } from "./components/Leaderboard";
 import { Panel } from "./components/Panel";
+import { Rich } from "./components/Rich";
 import { RulesModal } from "./components/RulesModal";
 import { SpriteDefs } from "./components/Sprites";
 import { usePuzzle } from "./hooks/usePuzzle";
@@ -23,6 +27,7 @@ import { puzzleAbi } from "./lib/abi";
 import { publicClient } from "./lib/client";
 import { CHAIN_ID, CORE_ADDRESS, EXPLORER_URL, PUZZLE_ADDRESS } from "./lib/config";
 import { formatDuration, readableError, shortAddress } from "./lib/format";
+import { useI18n } from "./lib/i18n";
 import {
   DIR_KEYS,
   ROUNDS_PER_LEVEL,
@@ -40,6 +45,7 @@ type Notice = { kind: "info" | "ok" | "err"; text: string } | null;
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export default function App() {
+  const { t } = useI18n();
   const wallet = useWallet();
   const { level, best, entries, loading, error, refresh } = usePuzzle(wallet.address);
   const roundSeconds = useRoundSeconds();
@@ -107,7 +113,7 @@ export default function App() {
   const submit = useCallback(async () => {
     if (!level || !solved || moves.length === 0) return;
     setSubmitting(true);
-    setNotice({ kind: "info", text: "确认关卡…" });
+    setNotice({ kind: "info", text: t("notice.checking") });
     try {
       // 提交前重新确认关卡没变：读关卡和发交易之间可能刚好换关，
       // 那种情况下合约会以 LevelNotOpen 拒绝，先拦一次能省掉一笔失败交易。
@@ -117,33 +123,32 @@ export default function App() {
         functionName: "currentLevelIndex",
       });
       if (stillCurrent !== level.index) {
-        setNotice({ kind: "err", text: "本关已经结束了，刷新后会自动切到新关卡。" });
+        setNotice({ kind: "err", text: t("notice.levelEnded") });
         refresh();
         return;
       }
-      setNotice({ kind: "info", text: "等待钱包确认…" });
+      setNotice({ kind: "info", text: t("notice.waitingWallet") });
       const hash = await wallet.sendSubmit(level.index, encodeMoves(moves));
-      setNotice({ kind: "info", text: `交易已发送，等待上链… ${shortAddress(hash)}` });
+      setNotice({ kind: "info", text: t("notice.sent", { hash: shortAddress(hash) }) });
       const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 180_000 });
       if (receipt.status === "success") {
-        setNotice({ kind: "ok", text: `已上链：${moves.length} 步` });
+        setNotice({ kind: "ok", text: t("notice.confirmed", { moves: moves.length }) });
         refresh();
       } else {
-        setNotice({ kind: "err", text: "交易失败：合约拒绝了这次提交。" });
+        setNotice({ kind: "err", text: t("notice.rejected") });
       }
     } catch (e) {
-      setNotice({ kind: "err", text: readableError(e) });
+      setNotice({ kind: "err", text: readableError(e, t) });
     } finally {
       setSubmitting(false);
     }
-  }, [level, solved, moves, wallet, refresh]);
+  }, [level, solved, moves, wallet, refresh, t]);
 
   const progress = level ? levelProgress(level) : 0;
   const doneRounds = level ? Number(level.certifiedRound - level.startRound) : 0;
   const remainingRounds = level ? Number(level.endRound - level.certifiedRound) : 0;
   const isConfigured = PUZZLE_ADDRESS.toLowerCase() !== ZERO_ADDRESS;
 
-  // 只有在"成绩还没被自己刷新"的时候才允许提交，避免白花 gas
   // 合约限制单次提交最多 200 步（MAX_MOVES），超了会直接 revert
   const withinMoveLimit = moves.length <= 200;
   const beatsBest = best === 0n || BigInt(moves.length) < best;
@@ -160,7 +165,7 @@ export default function App() {
 
           {!isConfigured && (
             <div className="mt-5 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 font-mono text-xs text-gold">
-              还没有配置游戏合约地址。请设置环境变量 <span className="text-white">VITE_PUZZLE_ADDRESS</span> 后重新构建。
+              {t("app.configMissing")}
             </div>
           )}
 
@@ -175,11 +180,13 @@ export default function App() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted">本关进度</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted">
+                    {t("level.progress")}
+                  </p>
                   <p className="font-mono text-xs tabular-nums text-white/80">
-                    {doneRounds}/{ROUNDS_PER_LEVEL} 轮
+                    {t("level.rounds", { done: doneRounds, total: ROUNDS_PER_LEVEL })}
                     <span className="ml-2 hidden text-muted sm:inline">
-                      · 还需 {formatDuration(remainingRounds * roundSeconds)}
+                      {t("level.timeLeft", { duration: formatDuration(remainingRounds * roundSeconds, t) })}
                     </span>
                   </p>
                 </div>
@@ -195,17 +202,17 @@ export default function App() {
               <div className="mt-4 w-full">
                 {error && (
                   <div className="mb-3 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 font-mono text-[11px] text-red-300">
-                    读取关卡失败：{error}
+                    {t("level.loadFailed")}：{error}
                     <button onClick={refresh} className="ml-2 underline decoration-dotted">
-                      重试
+                      {t("level.retry")}
                     </button>
                   </div>
                 )}
                 {level && play ? (
                   <Board level={level} play={play} solved={solved} />
                 ) : (
-                  <div className="flex aspect-square w-full items-center justify-center rounded-2xl border border-line bg-ink-2 font-mono text-xs text-muted">
-                    {loading ? "正在从链上读取关卡…" : "暂无关卡"}
+                  <div className="flex aspect-square w-full items-center justify-center rounded-2xl border border-line bg-ink-2 px-6 text-center font-mono text-xs text-muted">
+                    {loading ? t("board.emptyHint") : t("level.none")}
                   </div>
                 )}
               </div>
@@ -213,7 +220,9 @@ export default function App() {
               <div className="mt-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div className="rounded-lg border border-line bg-ink/60 px-3 py-1.5">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted">步数</span>
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                      {t("controls.moves")}
+                    </span>
                     <span className="ml-2 font-mono text-sm tabular-nums text-white">{moves.length}</span>
                   </div>
                   <button
@@ -221,17 +230,17 @@ export default function App() {
                     disabled={moves.length === 0}
                     className="rounded-lg border border-line bg-panel-2 px-3 py-2 font-mono text-xs text-white/75 transition hover:border-gold/50 hover:text-gold disabled:opacity-30"
                   >
-                    撤销
+                    {t("controls.undo")}
                   </button>
                   <button
                     onClick={reset}
                     disabled={moves.length === 0}
                     className="rounded-lg border border-line bg-panel-2 px-3 py-2 font-mono text-xs text-white/75 transition hover:border-gold/50 hover:text-gold disabled:opacity-30"
                   >
-                    重来
+                    {t("controls.reset")}
                   </button>
                 </div>
-                <p className="hidden font-mono text-[10px] text-muted sm:block">方向键 / WASD · Z 撤销 · R 重来</p>
+                <p className="hidden font-mono text-[10px] text-muted sm:block">{t("controls.hint")}</p>
               </div>
 
               <div className="mt-3 flex justify-center md:hidden">
@@ -272,39 +281,41 @@ export default function App() {
 
             {/* 信息区 */}
             <aside className="space-y-4">
-              <Panel title="我的成绩">
+              <Panel title={t("panel.myScore")}>
                 <div className="grid grid-cols-2 gap-3">
-                  <Metric label="本关最佳" value={best > 0n ? `${best.toString()} 步` : "—"} accent />
-                  <Metric label="本关通关人数" value={level ? level.solved.toString() : "—"} />
+                  <Metric
+                    label={t("panel.bestThisLevel")}
+                    value={best > 0n ? t("moves.value", { moves: best.toString() }) : "—"}
+                    accent
+                  />
+                  <Metric label={t("panel.solvers")} value={level ? level.solved.toString() : "—"} />
                 </div>
-                <p className="mt-3 font-mono text-[11px] leading-relaxed text-muted">
-                  成绩只记录在链上。同一关可以反复提交，只保留最少步数。
-                </p>
+                <p className="mt-3 font-mono text-[11px] leading-relaxed text-muted">{t("panel.scoreNote")}</p>
               </Panel>
 
-              <Panel title="排行榜" hint="步数最少优先">
+              <Panel title={t("panel.leaderboard")} hint={t("panel.fewestFirst")}>
                 <Leaderboard entries={entries} me={wallet.address} />
               </Panel>
 
-              <Panel title="关于这一关">
+              <Panel title={t("panel.aboutLevel")}>
                 <ul className="space-y-2 font-mono text-[11px] leading-relaxed text-muted">
                   <li>
-                    · 关卡种子来自 SqueekCore 第{" "}
-                    <span className="text-white/80">{level ? level.startRound.toString() : "—"}</span>{" "}
-                    轮结束时的账本位置，在链上生成。
+                    <Rich
+                      text={t("panel.seedLine", {
+                        round: level ? level.startRound.toString() : "—",
+                      })}
+                    />
                   </li>
+                  <li>{t("panel.sameLevelLine")}</li>
                   <li>
-                    · 全世界同一时间看到同一关，没人能提前知道下一关。
-                  </li>
-                  <li>
-                    · 每 {ROUNDS_PER_LEVEL} 个已认证轮次换关（8 小时），一天三关。
+                    <Rich text={t("panel.cadenceLine", { n: ROUNDS_PER_LEVEL })} />
                   </li>
                 </ul>
                 <button
                   onClick={() => setRulesOpen(true)}
                   className="mt-3 w-full rounded-lg border border-line bg-panel-2 py-2 font-mono text-xs text-white/75 transition hover:border-gold/50 hover:text-gold"
                 >
-                  完整规则与合约地址
+                  {t("panel.fullRules")}
                 </button>
               </Panel>
             </aside>
@@ -324,27 +335,30 @@ export default function App() {
 // ---------------------------------------------------------------------------
 
 function Header({ wallet, onRules }: { wallet: ReturnType<typeof useWallet>; onRules: () => void }) {
+  const { t } = useI18n();
   const chainLabel =
     CHAIN_ID === 11155111 ? "SEPOLIA" : CHAIN_ID === 31337 ? "LOCAL" : `CHAIN ${CHAIN_ID}`;
+
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4">
+    <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
       <div className="flex items-center gap-3">
         <Mark />
         <div>
           <h1 className="font-display text-[26px] font-semibold uppercase leading-none tracking-[0.22em]">
             Squeek Puzzle
           </h1>
-          <p className="mt-1 font-mono text-[11px] text-muted">把三颗坚果推回窝里 · 每 8 小时一关</p>
+          <p className="mt-1 font-mono text-[11px] text-muted">{t("app.tagline")}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <LangToggle />
         <button
           onClick={onRules}
-          className="rounded-full border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted transition hover:border-gold/50 hover:text-gold"
+          className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted transition hover:border-gold/50 hover:text-gold"
         >
-          怎么玩
+          {t("app.howToPlay")}
         </button>
-        <span className="rounded-full border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted">
+        <span className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted">
           {chainLabel}
         </span>
         <ConnectButton wallet={wallet} />
@@ -412,10 +426,12 @@ function SubmitArea({
   onSwitch: () => void;
   onSubmit: () => void;
 }) {
+  const { t } = useI18n();
+
   if (!solved) {
     return (
       <div className="rounded-xl border border-dashed border-line px-4 py-3 text-center font-mono text-xs text-muted">
-        把三颗坚果全部推进虚线窝，就能提交成绩
+        {t("submit.instruction")}
       </div>
     );
   }
@@ -426,7 +442,7 @@ function SubmitArea({
         onClick={onConnect}
         className="w-full rounded-xl bg-gold py-3 font-display text-base font-semibold uppercase tracking-[0.15em] text-ink transition hover:bg-[#ffc85a]"
       >
-        {hasProvider ? "连接钱包后提交" : "安装钱包后提交"}
+        {hasProvider ? t("submit.connect") : t("submit.install")}
       </button>
     );
   }
@@ -437,7 +453,7 @@ function SubmitArea({
         onClick={onSwitch}
         className="w-full rounded-xl border border-gold/60 bg-gold/10 py-3 font-display text-base font-semibold uppercase tracking-[0.15em] text-gold"
       >
-        网络不对，切换后提交
+        {t("submit.wrongChain")}
       </button>
     );
   }
@@ -445,7 +461,7 @@ function SubmitArea({
   if (!beatsBest) {
     return (
       <div className="rounded-xl border border-mint/30 bg-mint/10 px-4 py-3 text-center font-mono text-xs text-mint">
-        你本关的最佳成绩是 {best.toString()} 步，这次 {moves} 步没有更快，不用再花 gas 了。
+        {t("submit.noBetter", { best: best.toString(), moves })}
       </div>
     );
   }
@@ -456,12 +472,13 @@ function SubmitArea({
       disabled={!canSubmit}
       className="w-full rounded-xl bg-mint py-3 font-display text-base font-semibold uppercase tracking-[0.15em] text-ink transition hover:bg-[#7df0c4] disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {submitting ? "提交中…" : `提交通关 · ${moves} 步`}
+      {submitting ? t("submit.submitting") : t("submit.button", { moves })}
     </button>
   );
 }
 
 function Footer() {
+  const { t } = useI18n();
   return (
     <footer className="mt-10 border-t border-line pt-5 font-mono text-[11px] leading-relaxed text-muted">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
@@ -478,13 +495,11 @@ function Footer() {
             rel="noreferrer"
             className="text-mint underline decoration-dotted"
           >
-            区块浏览器
+            {t("footer.explorer")}
           </a>
         )}
       </div>
-      <p className="mt-2 max-w-3xl">
-        关卡由 SqueekCore 已结算轮次的数据确定性地生成，成绩由合约重放校验。页面不托管任何资金，也不需要授权。
-      </p>
+      <p className="mt-2 max-w-3xl">{t("footer.dataLine")}</p>
     </footer>
   );
 }

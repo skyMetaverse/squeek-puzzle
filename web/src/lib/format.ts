@@ -1,14 +1,16 @@
 // 文件作用：零散格式化与错误信息处理。
-// 为什么单独放：地址缩写、错误提示在多个组件里都要用，集中一份避免各写一套。
+// 为什么单独放：地址缩写、错误提示、时长在多个组件里都要用，集中一份避免各写一套。
+// 与文案相关的函数都接收 t()，保证输出跟随当前语言。
+import type { TFunc } from "./i18n";
 
 export function shortAddress(address?: string, head = 6, tail = 4): string {
   if (!address) return "";
   return `${address.slice(0, head)}…${address.slice(-tail)}`;
 }
 
-/** 把 viem / 钱包抛出的错误翻译成中文提示，避免把原始栈信息甩给用户 */
-export function readableError(error: unknown): string {
-  if (!error) return "未知错误";
+/** 把 viem / 钱包抛出的错误翻译成当前语言的提示，避免把原始栈信息甩给用户 */
+export function readableError(error: unknown, t: TFunc): string {
+  if (!error) return t("error.unknown");
   const anyError = error as {
     shortMessage?: string;
     message?: string;
@@ -16,28 +18,23 @@ export function readableError(error: unknown): string {
     name?: string;
   };
 
-  if (anyError.code === 4001) return "你在钱包里取消了这笔交易。";
-  if (anyError.name === "ContractFunctionExecutionError" && anyError.shortMessage) {
-    return anyError.shortMessage;
-  }
+  if (anyError.code === 4001) return t("error.cancelled");
   if (anyError.shortMessage) return anyError.shortMessage;
   if (anyError.message) {
     // 只取第一行，避免把整段 viem 报错糊在界面上
     return anyError.message.split("\n")[0];
   }
-  return "未知错误";
-}
-
-export function formatMoves(moves: bigint): string {
-  return moves === 0n ? "—" : `${moves.toString()} 步`;
+  return t("error.unknown");
 }
 
 /** 把秒数写成"约 3 小时 12 分"这种好读的形式 */
-export function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "即将换关";
+export function formatDuration(seconds: number, t: TFunc): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return t("duration.soon");
   const totalMinutes = Math.round(seconds / 60);
-  if (totalMinutes < 60) return `约 ${totalMinutes} 分钟`;
+  if (totalMinutes < 60) return t("duration.minutes", { n: totalMinutes });
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  return minutes === 0 ? `约 ${hours} 小时` : `约 ${hours} 小时 ${minutes} 分`;
+  return minutes === 0
+    ? t("duration.hours", { h: hours })
+    : t("duration.hoursMinutes", { h: hours, m: minutes });
 }

@@ -21,6 +21,7 @@ src/
 ├── App.tsx                  # 主界面与游戏流程编排
 ├── index.css                # Tailwind v4 + 主题变量（色板、字体）
 ├── lib/
+│   ├── i18n.tsx             # 中英双语字典 + Context（t / 语言切换 / 记忆）
 │   ├── abi.ts               # 合约 ABI（只声明用到的方法）
 │   ├── client.ts            # viem 只读客户端
 │   ├── config.ts            # 链、地址、RPC（环境变量）
@@ -32,6 +33,8 @@ src/
 │   └── useCoreConfig.ts     # 读 SqueekCore 轮长（算换关倒计时）
 └── components/
     ├── Board.tsx            # 6x6 棋盘（背景格 + 绝对定位精灵）
+    ├── LangToggle.tsx       # 中 / EN 切换
+    ├── Rich.tsx             # 把文案里的 **高亮** 渲染成金色
     ├── Sprites.tsx          # 仓鼠 / 坚果 / 窝的 SVG
     ├── Dpad.tsx             # 移动端方向键
     ├── Leaderboard.tsx      # 本关排行榜
@@ -43,6 +46,18 @@ scripts/
 ├── solver.ts                # 独立的 BFS 求解器
 └── current.ts               # 打印当前关卡与参考解（手工验证用）
 ```
+
+## 中英双语
+
+- 文案全部集中在 `src/lib/i18n.tsx`：中文是基准字典，英文必须与它的 key 一一对应，
+  少写一条会直接编译报错。**不要在 JSX 里直接写中文或英文。**
+- 用法：`const { t } = useI18n();` → `t("submit.button", { moves: 12 })`。
+- 文案里的 `{name}` 是占位符；`**文字**` 表示高亮，用 `<Rich text={...} />` 渲染
+  （不用 `dangerouslySetInnerHTML`，避免注入面）。
+- 语言选择：本地记忆（`localStorage: squeek-puzzle:lang`）> 浏览器语言 > 中文；
+  切换时同步 `<html lang>` 和页面标题。
+- 与文案相关的工具函数（`formatDuration` / `readableError`）都接收 `t`，不自己写死文字。
+- 不翻译的内容：品牌名、`Level` 标签、链名（`LOCAL` / `SEPOLIA`）、合约名、`ESC` 键名。
 
 ## 关键实现说明
 

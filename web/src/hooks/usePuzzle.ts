@@ -9,6 +9,7 @@ import { type Address, parseEventLogs } from "viem";
 import { puzzleAbi } from "../lib/abi";
 import { publicClient } from "../lib/client";
 import { DEPLOY_BLOCK, PUZZLE_ADDRESS } from "../lib/config";
+import { useI18n } from "../lib/i18n";
 import type { Level } from "../lib/game";
 
 export interface Entry {
@@ -29,6 +30,7 @@ export interface PuzzleState {
 const LOOKBACK = 5_000n;
 
 export function usePuzzle(address?: Address): PuzzleState {
+  const { t } = useI18n();
   const [level, setLevel] = useState<Level | null>(null);
   const [best, setBest] = useState<bigint>(0n);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -110,7 +112,7 @@ export function usePuzzle(address?: Address): PuzzleState {
       } catch (e) {
         if (cancelled) return;
         // 关卡生成失败或 RPC 不通时，必须让用户看到"未知"，而不是显示成 0
-        setError(e instanceof Error ? e.message : "读取关卡失败");
+        setError(e instanceof Error ? e.message : t("level.loadFailed"));
         setLoading(false);
       }
     };
@@ -122,7 +124,7 @@ export function usePuzzle(address?: Address): PuzzleState {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [address, nonce]);
+  }, [address, nonce, t]);
 
   return { level, best, entries, loading, error, refresh };
 }

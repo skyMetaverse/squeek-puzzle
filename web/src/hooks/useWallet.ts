@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createWalletClient, custom, type Address, type Hex } from "viem";
 import { puzzleAbi } from "../lib/abi";
 import { CHAIN_ID, PUZZLE_ADDRESS, chain } from "../lib/config";
+import { useI18n } from "../lib/i18n";
 
 type Status = "idle" | "connecting" | "connected";
 
@@ -26,6 +27,7 @@ export interface Wallet {
 }
 
 export function useWallet(): Wallet {
+  const { t } = useI18n();
   const [address, setAddress] = useState<Address>();
   const [walletChainId, setWalletChainId] = useState<number>();
   const [status, setStatus] = useState<Status>("idle");
@@ -78,7 +80,7 @@ export function useWallet(): Wallet {
   const connect = useCallback(async () => {
     const eth = window.ethereum;
     if (!eth) {
-      setError("没有检测到浏览器钱包，请先安装 MetaMask 或其它注入式钱包。");
+      setError(t("wallet.noProvider"));
       return;
     }
     setStatus("connecting");
@@ -91,9 +93,9 @@ export function useWallet(): Wallet {
       setStatus("connected");
     } catch (e) {
       setStatus("idle");
-      setError(e instanceof Error ? e.message : "连接钱包失败");
+      setError(e instanceof Error ? e.message : t("wallet.connectFailed"));
     }
-  }, []);
+  }, [t]);
 
   const switchChain = useCallback(async () => {
     const eth = window.ethereum;
@@ -119,21 +121,21 @@ export function useWallet(): Wallet {
             ],
           });
         } catch (addError) {
-          setError(addError instanceof Error ? addError.message : "添加网络失败");
+          setError(addError instanceof Error ? addError.message : t("wallet.addChainFailed"));
         }
       } else {
-        setError(e instanceof Error ? e.message : "切换网络失败");
+        setError(e instanceof Error ? e.message : t("wallet.switchFailed"));
       }
     }
     void sync();
-  }, [sync]);
+  }, [sync, t]);
 
   const sendSubmit = useCallback(
     async (level: bigint, moves: Hex) => {
       const eth = window.ethereum;
-      if (!eth) throw new Error("没有检测到浏览器钱包");
-      if (!address) throw new Error("请先连接钱包");
-      if (walletChainId !== CHAIN_ID) throw new Error("钱包网络不对，请先切换网络");
+      if (!eth) throw new Error(t("wallet.noProviderShort"));
+      if (!address) throw new Error(t("wallet.notConnected"));
+      if (walletChainId !== CHAIN_ID) throw new Error(t("wallet.wrongNetwork"));
 
       const walletClient = createWalletClient({ chain, transport: custom(eth) });
       return walletClient.writeContract({
@@ -145,7 +147,7 @@ export function useWallet(): Wallet {
         chain,
       });
     },
-    [address, walletChainId],
+    [address, walletChainId, t],
   );
 
   return {
