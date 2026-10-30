@@ -1,6 +1,7 @@
 # IMD 接入任务书：Squeek Puzzle 进度保存与恢复
 
-当前状态：准备阶段，尚未创建付费 IMD 任务。本文不是 IMD Job ID，不能拿来填写 Genesis 提交表。
+当前状态：源码已公开，免费导入、任务检查和报价验证均已通过，尚未付款或生成 IMD Job ID。
+本文和免费报价都不是 Job ID，不能拿来填写 Genesis 提交表。
 
 ## 任务范围
 
@@ -15,9 +16,10 @@
 - SqueekCore：`0x74665dAecA35A2303e767E76a2FF1FB6F93e119f`。
 - 区块浏览器：<https://sepolia.etherscan.io/>。
 - 前端目录：`web/`，React + TypeScript + Tailwind CSS + viem，Vite 构建，适配 Vercel 静态部署。
-- 原始源码基准：本地提交 `756c67d70c31fff5b0b486659199b11abcef7bf5`。
-- 请求模板：同目录 `imd-job.request.template.json`。其中仓库 URL 为拟议目标，尚未发布；
-  该文件不能直接用于付费，必须先用源码导入返回的固定提交替换。
+- 公开源码：<https://github.com/skyMetaverse/squeek-puzzle>。
+- 已验证的导入提交：`fc858c7073be5d063eecdcc65db8d1cdd17eca6b`。
+- 请求文件：同目录 `imd-job.request.json`；`repoUrl` / `baseCommit` 直接使用 IMD 导入返回值。
+- 根目录构建入口：`npm ci && npm run build`，产物 `dist/`；内部调用 `web/` 的原有构建。
 
 本次只改前端，现有合约作为已部署依赖。任务不包含新币、收费玩法、合约重部署、资金托管或交易自动签名。
 
@@ -60,11 +62,11 @@ Leave contracts/ and the current deployed addresses unchanged. Do not add local-
 
 ## IMD 接入前置条件
 
-- 当前项目没有 remote，也没有已存在的 `skyMetaverse/squeek-puzzle` 仓库。
+- 用户已创建公开仓库并授权上传：`git@github.com:skyMetaverse/squeek-puzzle.git`，本地 `main` 已推送。
 - IMD 的已有源码导入要求公开 GitHub 仓库和固定提交。当前网页没有本地 ZIP 上传入口。
-- 用户此前明确要求不用推远程，因此尚未创建或发布公开仓库。
-- 待用户允许发布纯源码后，先执行 IMD 的免费 `/requests/import`，把返回的 `repoUrl` / `baseCommit`
-  写进请求，再运行 `/requests/check` 和免费 `/requests/quote`；全部通过后才进入付款。
+- IMD 导入器只检查仓库根目录；原有 `web/` 子目录无法直接被识别。已增加根目录构建脚本，
+  保留 `web/` / `contracts/` 分目录。按锁文件安装和构建已验证，根目录产物与 `web/dist/` 完全一致。
+- 免费 `/requests/import` 已返回 `ok: true`，固定提交见上方。付款前需要重新获取未过期报价。
 - 这是第一个 IMD 任务，应使用 `job.open`；`job.continue` 只适用于已经存在的 IMD 项目。
 - 付款使用 Genesis 已验证的钱包。此前部署钱包为 `0x00000082Bc916568Cb4479D3a218daFa60eBBA25`，
   付款前仍需用户确认该钱包是本次项目要绑定的钱包。
@@ -74,21 +76,28 @@ Leave contracts/ and the current deployed addresses unchanged. Do not add local-
 
 ## 免费预检结果
 
-已对请求模板实际调用 `POST https://api.imd.fun/requests/check`，HTTP 200。
-初次预检提示导入的网站托管需要 `site-content-check`，已将任务改为
-`build-website` → `site-content-check` 两步并再次检查。
+已实际完成以下免费调用：
 
-当前仅剩以下阻塞，尚不满足付费条件：
+| 接口 | 结果 |
+|---|---|
+| `POST /requests/import`，`kind: site` | HTTP 200，`ok: true`，`site.build: true` |
+| `POST /requests/check` | HTTP 200，`blockers: []`，`suggestions: []` |
+| `POST /requests/quote` | HTTP 201，`created: true`，`status: quoted`，无字段校验问题 |
 
-```json
-{
-  "code": "not_found",
-  "detail": "no public repository at github.com/skyMetaverse/squeek-puzzle: a private one cannot be built, since workers clone without credentials"
-}
-```
+平台给出的计划：
 
-`plan` / `facts` 目前为空，不能把本次预检当作完整任务批准。
-源码公开后还需要重新导入、免费检查和免费报价，检查结果可能出现新的要求。
+1. `build-website`：实现并检查网站。
+2. `import-site`：从源码构建静态网站。
+3. `site-content-check`：由另一代理检查将要托管的内容。
+4. `design-critic`：由另一代理核对需求与设计（平台自动加入）。
+
+`facts` 返回空数组。报价支付网络是 `eip155:1`（Ethereum 主网），金额是
+`500000000000000000`，代币 `0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7`，精度 18。
+此次仅验证免费报价，不包含支付签名，未发送 `/submit` 或链上请求，未生成付费任务。
+报价有效期十分钟，实际付款前必须重新校验并报价。
+
+任务要求交付源码和独立预览；`github: true`、`ipfs: true`，用于保留 IMD 开发成果与任务记录。
+本任务不会自动替换现有 Vercel 生产站。
 
 来源：<https://imd.fun/skill.md>、<https://imd.fun/skill/jobs.md>、<https://api.imd.fun/requests/capabilities>、
 <https://explorer.imd.fun/launch?make=build-website>。
