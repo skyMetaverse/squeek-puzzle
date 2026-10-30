@@ -11,19 +11,12 @@ npm run build      # tsc -b && vite build，产物在 dist/
 npm run typecheck
 ```
 
-**默认连 Sepolia 的正式部署**（`SqueekPuzzle 0x49d0227b…49c391`，区块 12025550），
-不需要任何环境变量。地址表在 `src/lib/config.ts` 的 `DEPLOYMENTS` 里，按 chainId 索引。
+只支持 **Sepolia 正式部署**（`SqueekPuzzle 0x49d0227b…49c391`，区块 12025550），
+链与地址写在 `src/lib/config.ts`，**不需要任何环境变量**。
+本地 anvil 的链路已经从前端移除（合约侧的本地测试仍在 `contracts/` 与 `scripts/` 里）。
 
-切到本地 anvil：新建 `web/.env.local` 写入
-
-```
-VITE_CHAIN_ID=31337
-VITE_RPC_URL=http://127.0.0.1:8545
-VITE_PUZZLE_ADDRESS=0xdc64a140aa3e981100a9beca4e685f962f0cf6c9
-VITE_CORE_ADDRESS=0x5fbdb2315678afecb367f032d93f642f64180aa3
-```
-
-其余可覆盖项见 `.env.example`。
+可覆盖项（一般不用动）：`VITE_RPC_URL` / `VITE_PUZZLE_ADDRESS` / `VITE_CORE_ADDRESS` /
+`VITE_DEPLOY_BLOCK`，见 `.env.example`。
 
 ## 目录
 
@@ -68,7 +61,7 @@ scripts/
 - 语言选择：本地记忆（`localStorage: squeek-puzzle:lang`）> 浏览器语言 > 中文；
   切换时同步 `<html lang>` 和页面标题。
 - 与文案相关的工具函数（`formatDuration` / `readableError`）都接收 `t`，不自己写死文字。
-- 不翻译的内容：品牌名、`Level` 标签、链名（`LOCAL` / `SEPOLIA`）、合约名、`ESC` 键名。
+- 不翻译的内容：品牌名、`Level` 标签、链名（`SEPOLIA`）、合约名、`ESC` 键名。
 
 ## 关键实现说明
 
@@ -86,14 +79,17 @@ scripts/
 
 1. 导入仓库，**Root Directory 选 `web`**。
 2. Framework Preset 会自动识别为 Vite：Build `npm run build`，Output `dist`。
-3. **不需要配置环境变量**——默认就是 Sepolia 正式部署。只有想换网络/换合约时才需要覆盖。
-   如果之前设过 `VITE_CHAIN_ID=31337`，记得删掉或改成 `11155111`，否则会连到本地链。
+3. **不需要配置环境变量**——默认就是 Sepolia 正式部署。只有想换 RPC 或换合约地址时才需要覆盖。
+   注意 `.vercelignore` 已经把 `node_modules` / `dist` / `scripts` 排除，上传体积只有十几 KB，
+   依赖和构建都在 Vercel 云端完成。
 4. 单页应用，没有前端路由，不需要 rewrite 规则。
 
-## 本地端到端验证
+## 合约侧端到端验证（不参与前端构建）
+
+`scripts/` 目录是合约的验证工具，不会被前端打包、也不会部署到 Vercel：
 
 ```bash
-# 需要先 anvil + DeployLocal 部署
+# 需要先在本地 anvil 上跑 contracts/script/DeployLocal.s.sol
 E2E_PRIVATE_KEY=<anvil 打印的第一个私钥> bun run e2e
 ```
 

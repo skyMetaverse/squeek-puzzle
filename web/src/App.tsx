@@ -25,7 +25,7 @@ import { useRoundSeconds } from "./hooks/useCoreConfig";
 import { useWallet } from "./hooks/useWallet";
 import { puzzleAbi } from "./lib/abi";
 import { publicClient } from "./lib/client";
-import { CHAIN_ID, CORE_ADDRESS, EXPLORER_URL, PUZZLE_ADDRESS } from "./lib/config";
+import { CORE_ADDRESS, EXPLORER_URL, PUZZLE_ADDRESS } from "./lib/config";
 import { formatDuration, readableError, shortAddress } from "./lib/format";
 import { useI18n } from "./lib/i18n";
 import {
@@ -336,8 +336,6 @@ export default function App() {
 
 function Header({ wallet, onRules }: { wallet: ReturnType<typeof useWallet>; onRules: () => void }) {
   const { t } = useI18n();
-  const chainLabel =
-    CHAIN_ID === 11155111 ? "SEPOLIA" : CHAIN_ID === 31337 ? "LOCAL" : `CHAIN ${CHAIN_ID}`;
 
   return (
     <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
@@ -359,7 +357,7 @@ function Header({ wallet, onRules }: { wallet: ReturnType<typeof useWallet>; onR
           {t("app.howToPlay")}
         </button>
         <span className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted">
-          {chainLabel}
+          SEPOLIA
         </span>
         <ConnectButton wallet={wallet} />
       </div>

@@ -2,11 +2,10 @@
 // 三种状态必须区分清楚：没装钱包、未连接、已连接但网络不对。
 // 网络不对时不允许发交易，只给"切换网络"入口。
 import type { Wallet } from "../hooks/useWallet";
-import { CHAIN_ID } from "../lib/config";
 import { shortAddress } from "../lib/format";
 import { useI18n } from "../lib/i18n";
 
-const CHAIN_LABEL = CHAIN_ID === 11155111 ? "SEPOLIA" : CHAIN_ID === 31337 ? "LOCAL" : `CHAIN ${CHAIN_ID}`;
+const CHAIN_LABEL = "SEPOLIA";
 
 export function ConnectButton({ wallet }: { wallet: Wallet }) {
   const { t } = useI18n();

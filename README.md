@@ -22,7 +22,7 @@ squeek-puzzle/
     └── scripts/        # 本地链端到端验证脚本
 ```
 
-## 快速开始（本地）
+## 快速开始
 
 需要：Foundry（forge / anvil）、Node 20.19+ 或 22.12+、Bun（跑验证脚本）。
 
@@ -39,19 +39,14 @@ forge script script/DeployLocal.s.sol --rpc-url http://127.0.0.1:8545 \
 #   MockSqueekCore 0x5fbdb2315678afecb367f032d93f642f64180aa3
 #   SqueekPuzzle   0xdc64a140aa3e981100a9beca4e685f962f0cf6c9
 
-# 3) 前端（默认连 Sepolia 正式部署）
+# 3) 前端
 cd ../web
 npm install
 npm run dev          # http://localhost:5173
-
-# 想连本地链：写一个 web/.env.local
-printf 'VITE_CHAIN_ID=31337\nVITE_RPC_URL=http://127.0.0.1:8545\nVITE_PUZZLE_ADDRESS=0xdc64a140aa3e981100a9beca4e685f962f0cf6c9\nVITE_CORE_ADDRESS=0x5fbdb2315678afecb367f032d93f642f64180aa3\n' > web/.env.local
 ```
 
-本地 mock 的轮长被设成 10 秒，所以**每 8 分钟换一关**，方便看换关效果。
-前端默认指向 Sepolia；地址表在 `web/src/lib/config.ts` 的 `DEPLOYMENTS`（按 chainId 索引），可用环境变量覆盖。
-
-钱包：MetaMask 添加网络 `http://127.0.0.1:8545`、Chain ID `31337`，导入 anvil 打印的任意测试私钥。
+前端**只连 Sepolia 正式部署**（地址写死在 `web/src/lib/config.ts`，可用环境变量覆盖），
+本地 anvil 那条链路已经从前端移除。上面的本地链只用于跑合约测试和 `web/scripts` 里的端到端验证。
 
 ## 验证
 
@@ -62,7 +57,7 @@ cd contracts && forge test
 # 真实 Sepolia 状态下的接口校验（只读、不广播）
 forge script script/CheckSepolia.s.sol --rpc-url https://ethereum-sepolia-rpc.publicnode.com
 
-# 本地链端到端：解出最短解 → 发真实交易 → 核对事件与记账
+# 合约侧端到端（需要本地 anvil + DeployLocal）：解出最短解 → 发真实交易 → 核对事件与记账
 cd ../web && E2E_PRIVATE_KEY=<anvil 打印的第一个私钥> bun run e2e
 
 # 前端类型检查 + 构建
@@ -86,8 +81,8 @@ cd ../web && npm run build
 |---|---|---|---|
 | Sepolia (11155111) | SqueekPuzzle | `0x49D0227b7E6d94A3c2C321B1c5770Ab39149C391` | 12025550 |
 | Sepolia (11155111) | SqueekCore（官方） | `0x74665dAecA35A2303e767E76a2FF1FB6F93e119f` | — |
-| 本地 anvil (31337) | SqueekPuzzle | `0xdc64a140aa3e981100a9beca4e685f962f0cf6c9` | 0 |
-| 本地 anvil (31337) | MockSqueekCore | `0x5fbdb2315678afecb367f032d93f642f64180aa3` | 0 |
+
+区块浏览器：<https://sepolia.etherscan.io/address/0x49D0227b7E6d94A3c2C321B1c5770Ab39149C391>
 
 ## 设计要点（为什么这么做）
 
