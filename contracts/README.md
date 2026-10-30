@@ -31,6 +31,68 @@ forge script script/DeployLocal.s.sol --rpc-url http://127.0.0.1:8545 --broadcas
 forge script script/CheckSepolia.s.sol --rpc-url https://ethereum-sepolia-rpc.publicnode.com
 ```
 
+## 部署到测试网（私钥不暴露在终端）
+
+**不要用 `--private-key`**：私钥会写进 shell history，也会被同机其它进程从 `ps` 看到。
+用 Foundry 自带的加密 keystore：
+
+```bash
+# 1) 导入私钥。私钥和解锁密码都是隐藏输入（不回显、不进 history）
+cast wallet import sepolia-deployer --interactive
+#   Enter private key:  ← 粘贴私钥，屏幕无回显
+#   Enter password:     ← 设置解锁密码，屏幕无回显
+
+# 2) 确认地址（这就是后面的 --sender）
+cast wallet address --account sepolia-deployer
+
+# 3) RPC 也走变量：带 API key 的 URL 不要直接写在命令行里
+read -rs SEPOLIA_RPC          # 粘贴 RPC，回车，屏幕无回显
+
+# 4) 先干跑一遍（不广播，不改链上状态）
+forge script script/DeploySepolia.s.sol \
+  --rpc-url "$SEPOLIA_RPC" \
+  --account sepolia-deployer --sender 0x你的地址
+
+# 5) 正式部署（会再提示一次 keystore 密码）
+forge script script/DeploySepolia.s.sol \
+  --rpc-url "$SEPOLIA_RPC" \
+  --broadcast \
+  --account sepolia-deployer --sender 0x你的地址
+```
+
+原理与边界：
+
+| 项 | 说明 |
+|---|---|
+| keystore 位置 | `~/.foundry/keystores/<名字>`，scrypt 加密；文件里没有明文私钥 |
+| 解锁时机 | `forge script` 运行时在进程内存里解密，用完即释放 |
+| shell history | 只有 `--account sepolia-deployer` 这类名字，没有私钥 |
+| `ps` 可见性 | 命令行里没有私钥，同机进程看不到 |
+| 密码别和 keystore 放一起 | keystore 泄露 + 密码泄露 = 私钥泄露 |
+
+其它可选方案：
+
+```bash
+# 硬件钱包（私钥永远不离开设备）
+forge script script/DeploySepolia.s.sol --rpc-url "$SEPOLIA_RPC" --broadcast --ledger --sender 0x你的地址
+
+# CI / 无人值守：密码放独立文件（chmod 600），别塞进命令行
+forge script script/DeploySepolia.s.sol --rpc-url "$SEPOLIA_RPC" --broadcast \
+  --account sepolia-deployer --password-file /run/secrets/keystore-pass
+
+# 团队 / 云 KMS
+forge script script/DeploySepolia.s.sol --rpc-url "$SEPOLIA_RPC" --broadcast --aws
+```
+
+部署完拿地址和区块号填前端环境变量：
+
+```bash
+jq -r '.transactions[] | select(.contractName=="SqueekPuzzle") | .contractAddress' \
+  broadcast/DeploySepolia.s.sol/11155111/run-latest.json
+# 部署区块（JSON 里是十六进制，前端用 BigInt() 解析，可以直接填进 VITE_DEPLOY_BLOCK）
+jq -r '.receipts[0].blockNumber' broadcast/DeploySepolia.s.sol/11155111/run-latest.json
+```
+
 ## 合约接口
 
 ```solidity

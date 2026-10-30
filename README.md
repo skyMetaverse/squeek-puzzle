@@ -76,7 +76,8 @@ cd ../web && npm run build
    - `VITE_PUZZLE_ADDRESS=<Sepolia 上部署的 SqueekPuzzle>`
    - `VITE_CORE_ADDRESS=0x74665dAecA35A2303e767E76a2FF1FB6F93e119f`
    - `VITE_DEPLOY_BLOCK=<部署区块，用于日志回溯起点，可留空>`
-4. 先按 `contracts/README.md` 把合约部署到 Sepolia，再把地址填进去。
+4. 先按 `contracts/README.md` 的「部署到测试网」把合约部署到 Sepolia（用 `cast wallet import` +
+   `--account`，私钥不会出现在终端里），再把地址填进去。
 
 > 前端是纯静态页面，不托管私钥、不代理任何交易。所有读写都直接打到链上。
 
