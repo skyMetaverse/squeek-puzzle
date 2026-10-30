@@ -17,9 +17,11 @@ import {ISqueekCore} from "../src/interfaces/ISqueekCore.sol";
 ///   read -rs SEPOLIA_RPC
 ///
 ///   # 3) 部署（会提示输入 keystore 密码，同样隐藏）
+///   #    注意 -g 1000：Sepolia 已升级 Osaka，代码部署单价约为本地 anvil 的 7 倍，
+///   #    Foundry 的估算器仍按旧价格算，不加这个参数会 out of gas（详见 README）
 ///   forge script script/DeploySepolia.s.sol \
 ///     --rpc-url "$SEPOLIA_RPC" \
-///     --broadcast \
+///     --broadcast -g 1000 \
 ///     --account sepolia-deployer \
 ///     --sender 0x你的地址
 ///

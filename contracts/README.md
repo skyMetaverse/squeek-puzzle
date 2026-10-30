@@ -84,6 +84,52 @@ forge script script/DeploySepolia.s.sol --rpc-url "$SEPOLIA_RPC" --broadcast \
 forge script script/DeploySepolia.s.sol --rpc-url "$SEPOLIA_RPC" --broadcast --aws
 ```
 
+### ⚠️ Sepolia 的部署 gas：必须手动放大
+
+Sepolia 已经升级到 **Osaka**，合约代码的部署单价约为本地 anvil 的 **7 倍**。
+Foundry 1.4.3 的估算器仍按旧价格计算，所以 `forge script` 的估算会低 5~7 倍，
+直接 `--broadcast` 会 **out of gas**（交易失败，gas 全烧掉）。
+
+实测（SqueekPuzzle，initcode 7,266 字节）：
+
+| 来源 | gas |
+|---|---|
+| `forge script` 本地估算 | 2,048,376 |
+| 链上 `eth_estimateGas` | **11,165,247** |
+| 本地 anvil 实际消耗 | 1,575,674 |
+| 单笔交易上限（EIP-7825 / Osaka） | 16,777,216 |
+
+由此得出：
+
+- **1000 万不够** → 仍然 OOG
+- **2000 万会被节点拒绝** → 超过 EIP-7825 的单笔上限 16,777,216
+- 正确区间是 **1200~1300 万**
+
+两种写法，任选其一：
+
+```bash
+# A) 继续用脚本，把估算放大 10 倍 → 实际 gas limit 15,756,740（仍在 16.7M 上限内）
+forge script script/DeploySepolia.s.sol \
+  --rpc-url "$SEPOLIA_RPC" --broadcast -g 1000 \
+  --account sepolia-deployer --sender 0x你的地址
+
+# B) 直接指定 gas limit，不依赖估算器（合约变大时更可控）
+forge create src/SqueekPuzzle.sol:SqueekPuzzle \
+  --rpc-url "$SEPOLIA_RPC" --broadcast \
+  --account sepolia-deployer \
+  --gas-limit 13000000 \
+  --constructor-args 0x74665dAecA35A2303e767E76a2FF1FB6F93e119f
+# 注意：--constructor-args 是可变参数，必须放在最后，
+#       否则它会把后面的 --gas-limit / --broadcast 当成构造参数吃掉（dry-run 且用错 gas）
+```
+
+判断依据是 `cast estimate` / `eth_estimateGas` 给的数——**链自己算的是对的**，只有 forge 的本地估算偏低：
+
+```bash
+cast estimate --create "$(cast tx <失败的hash> input --rpc-url "$SEPOLIA_RPC")" \
+  --from 0x你的地址 --rpc-url "$SEPOLIA_RPC"
+```
+
 部署完拿地址和区块号填前端环境变量：
 
 ```bash
