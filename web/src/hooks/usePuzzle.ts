@@ -80,9 +80,12 @@ export function usePuzzle(address?: Address): PuzzleState {
           setBest(0n);
         }
 
-        // 本关排行榜：按玩家聚合，取各自最少步数
+        // 本关排行榜：按玩家聚合，取各自最少步数。
+        // 回溯范围取 max(部署区块, latest - LOOKBACK)：既不会扫到部署之前，
+        // 也不会随着链变长无限扩大查询区间（多数公共 RPC 会拒绝过大的 getLogs 范围）。
         const latest = await publicClient.getBlockNumber();
-        const from = DEPLOY_BLOCK > 0n ? DEPLOY_BLOCK : latest > LOOKBACK ? latest - LOOKBACK : 0n;
+        const windowStart = latest > LOOKBACK ? latest - LOOKBACK : 0n;
+        const from = windowStart > DEPLOY_BLOCK ? windowStart : DEPLOY_BLOCK;
         const logs = await publicClient.getLogs({
           address: PUZZLE_ADDRESS,
           fromBlock: from,

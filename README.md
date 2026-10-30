@@ -39,14 +39,17 @@ forge script script/DeployLocal.s.sol --rpc-url http://127.0.0.1:8545 \
 #   MockSqueekCore 0x5fbdb2315678afecb367f032d93f642f64180aa3
 #   SqueekPuzzle   0xdc64a140aa3e981100a9beca4e685f962f0cf6c9
 
-# 3) 前端
+# 3) 前端（默认连 Sepolia 正式部署）
 cd ../web
 npm install
 npm run dev          # http://localhost:5173
+
+# 想连本地链：写一个 web/.env.local
+printf 'VITE_CHAIN_ID=31337\nVITE_RPC_URL=http://127.0.0.1:8545\nVITE_PUZZLE_ADDRESS=0xdc64a140aa3e981100a9beca4e685f962f0cf6c9\nVITE_CORE_ADDRESS=0x5fbdb2315678afecb367f032d93f642f64180aa3\n' > web/.env.local
 ```
 
-本地默认配置（`web/src/lib/config.ts`）已经指向上面这两个地址和 `http://127.0.0.1:8545`，不用改任何环境变量。
 本地 mock 的轮长被设成 10 秒，所以**每 8 分钟换一关**，方便看换关效果。
+前端默认指向 Sepolia；地址表在 `web/src/lib/config.ts` 的 `DEPLOYMENTS`（按 chainId 索引），可用环境变量覆盖。
 
 钱包：MetaMask 添加网络 `http://127.0.0.1:8545`、Chain ID `31337`，导入 anvil 打印的任意测试私钥。
 
@@ -70,16 +73,21 @@ cd ../web && npm run build
 
 1. Vercel 新建项目，导入本仓库，**Root Directory 选 `web`**。
 2. Build Command `npm run build`，Output Directory `dist`（Vite 默认，Vercel 会自动识别）。
-3. 在 Environment Variables 里配置（见 `web/.env.example`）：
-   - `VITE_CHAIN_ID=11155111`
-   - `VITE_RPC_URL=<你的 Sepolia RPC>`
-   - `VITE_PUZZLE_ADDRESS=<Sepolia 上部署的 SqueekPuzzle>`
-   - `VITE_CORE_ADDRESS=0x74665dAecA35A2303e767E76a2FF1FB6F93e119f`
-   - `VITE_DEPLOY_BLOCK=<部署区块，用于日志回溯起点，可留空>`
+3. **不需要配置环境变量**：默认就是 Sepolia 正式部署。需要覆盖时再填（见 `web/.env.example`）：
+   `VITE_CHAIN_ID` / `VITE_RPC_URL` / `VITE_PUZZLE_ADDRESS` / `VITE_CORE_ADDRESS` / `VITE_DEPLOY_BLOCK`。
 4. 先按 `contracts/README.md` 的「部署到测试网」把合约部署到 Sepolia（用 `cast wallet import` +
    `--account`，私钥不会出现在终端里），再把地址填进去。
 
 > 前端是纯静态页面，不托管私钥、不代理任何交易。所有读写都直接打到链上。
+
+## 部署记录
+
+| 网络 | 合约 | 地址 | 部署区块 |
+|---|---|---|---|
+| Sepolia (11155111) | SqueekPuzzle | `0x49D0227b7E6d94A3c2C321B1c5770Ab39149C391` | 12025550 |
+| Sepolia (11155111) | SqueekCore（官方） | `0x74665dAecA35A2303e767E76a2FF1FB6F93e119f` | — |
+| 本地 anvil (31337) | SqueekPuzzle | `0xdc64a140aa3e981100a9beca4e685f962f0cf6c9` | 0 |
+| 本地 anvil (31337) | MockSqueekCore | `0x5fbdb2315678afecb367f032d93f642f64180aa3` | 0 |
 
 ## 设计要点（为什么这么做）
 
@@ -98,4 +106,5 @@ cd ../web && npm run build
 - **同一关可以反复提交**，合约只保留最少步数，但每次提交都要花 gas。
 - **排行榜走事件日志**，前端只回溯最近 5000 个区块（一关约 2400 个区块），换关后旧关卡的成绩不会显示。
 - **极端情况下关卡会偏简单**：小棋盘上反向构造的关卡可能被 BFS 找到很短的通路，实测约 6% 的关卡最短解 ≤ 6 步。
-- 本仓库**没有**在 Sepolia 上真实部署（没有可用的部署私钥与测试币），合约只在本地区块链上验证过；Sepolia 路径用只读脚本对真实 SqueekCore 校验过接口与关卡生成。
+- 部署 gas 有坑：Sepolia 已升级 Osaka，代码部署单价约为本地 anvil 的 7 倍，Foundry 的估算器偏低，
+  必须加 `-g 1000` 或显式 `--gas-limit`，详见 `contracts/README.md`。

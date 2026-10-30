@@ -11,8 +11,19 @@ npm run build      # tsc -b && vite build，产物在 dist/
 npm run typecheck
 ```
 
-默认连本地 anvil（Chain ID 31337，合约地址写死在 `src/lib/config.ts` 的默认值里）。
-连其它网络时用环境变量覆盖，见 `.env.example`。
+**默认连 Sepolia 的正式部署**（`SqueekPuzzle 0x49d0227b…49c391`，区块 12025550），
+不需要任何环境变量。地址表在 `src/lib/config.ts` 的 `DEPLOYMENTS` 里，按 chainId 索引。
+
+切到本地 anvil：新建 `web/.env.local` 写入
+
+```
+VITE_CHAIN_ID=31337
+VITE_RPC_URL=http://127.0.0.1:8545
+VITE_PUZZLE_ADDRESS=0xdc64a140aa3e981100a9beca4e685f962f0cf6c9
+VITE_CORE_ADDRESS=0x5fbdb2315678afecb367f032d93f642f64180aa3
+```
+
+其余可覆盖项见 `.env.example`。
 
 ## 目录
 
@@ -75,7 +86,8 @@ scripts/
 
 1. 导入仓库，**Root Directory 选 `web`**。
 2. Framework Preset 会自动识别为 Vite：Build `npm run build`，Output `dist`。
-3. 环境变量按 `.env.example` 里的 Sepolia 一组填写。
+3. **不需要配置环境变量**——默认就是 Sepolia 正式部署。只有想换网络/换合约时才需要覆盖。
+   如果之前设过 `VITE_CHAIN_ID=31337`，记得删掉或改成 `11155111`，否则会连到本地链。
 4. 单页应用，没有前端路由，不需要 rewrite 规则。
 
 ## 本地端到端验证

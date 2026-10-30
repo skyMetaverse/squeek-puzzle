@@ -3,25 +3,62 @@
 // 为什么用环境变量：同一个前端要同时能连本地 anvil 和 Sepolia，
 // 地址写死会让本地调试和正式部署互相污染。
 // Vercel 上通过项目环境变量注入 VITE_* 即可，无需改代码。
+//
+// 默认值：指向 Sepolia 的正式部署。本地开发在 web/.env.local 里写
+// `VITE_CHAIN_ID=31337` 即可切到 anvil（见 .env.example）。
 import { defineChain, type Address } from "viem";
 import { anvil, sepolia } from "viem/chains";
 
-const rawChainId = import.meta.env.VITE_CHAIN_ID ?? "31337";
-export const CHAIN_ID = Number(rawChainId);
+/** 一个网络的部署记录 */
+interface Deployment {
+  puzzle: Address;
+  core: Address;
+  /** 合约部署区块，用作日志回溯下界；0 表示未知 */
+  deployBlock: bigint;
+}
 
-/** 本地 anvil 的默认部署地址（DeployLocal.s.sol 的部署顺序固定，地址可复现） */
-const LOCAL_PUZZLE = "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9";
-const LOCAL_CORE = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
+/**
+ * 已知网络的默认部署记录。
+ * - 31337：DeployLocal.s.sol 的产物，部署顺序固定所以地址可复现
+ * - 11155111：Sepolia 正式部署（区块 12025550）
+ */
+const DEPLOYMENTS: Record<number, Deployment> = {
+  31337: {
+    puzzle: "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+    core: "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+    deployBlock: 0n,
+  },
+  11155111: {
+    puzzle: "0x49d0227b7e6d94a3c2c321b1c5770ab39149c391",
+    core: "0x74665daeca35a2303e767e76a2ff1fb6f93e119f",
+    deployBlock: 12025550n,
+  },
+};
 
+const ZERO: Address = "0x0000000000000000000000000000000000000000";
+const UNKNOWN: Deployment = { puzzle: ZERO, core: ZERO, deployBlock: 0n };
+
+export const CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID ?? "11155111");
 export const IS_LOCAL = CHAIN_ID === 31337;
 
-// 统一转小写：手抄地址时大小写校验（EIP-55）很容易写错，
-// 全小写地址 viem 直接接受，不会因为校验位不对而在运行时炸掉。
-export const PUZZLE_ADDRESS = (import.meta.env.VITE_PUZZLE_ADDRESS ??
-  (IS_LOCAL ? LOCAL_PUZZLE : "0x0000000000000000000000000000000000000000")).toLowerCase() as Address;
+const deployment = DEPLOYMENTS[CHAIN_ID] ?? UNKNOWN;
 
-export const CORE_ADDRESS = (import.meta.env.VITE_CORE_ADDRESS ??
-  (IS_LOCAL ? LOCAL_CORE : "0x74665dAecA35A2303e767E76a2FF1FB6F93e119f")).toLowerCase() as Address;
+/** 统一转小写：手抄地址时大小写校验（EIP-55）很容易写错，全小写地址 viem 直接接受 */
+const normalize = (value: string): Address => value.toLowerCase() as Address;
+
+/** 解析部署区块。填错（非数字）时退回默认值，不让一个环境变量把整页打挂。 */
+function parseBlock(value: string | undefined, fallback: bigint): bigint {
+  if (!value) return fallback;
+  try {
+    return BigInt(value);
+  } catch {
+    return fallback;
+  }
+}
+
+export const PUZZLE_ADDRESS = normalize(import.meta.env.VITE_PUZZLE_ADDRESS ?? deployment.puzzle);
+export const CORE_ADDRESS = normalize(import.meta.env.VITE_CORE_ADDRESS ?? deployment.core);
+export const DEPLOY_BLOCK = parseBlock(import.meta.env.VITE_DEPLOY_BLOCK, deployment.deployBlock);
 
 export const RPC_URL =
   import.meta.env.VITE_RPC_URL ??
@@ -46,10 +83,3 @@ export const chain =
           nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
           rpcUrls: { default: { http: [RPC_URL] } },
         });
-
-/** 合约部署区块：查日志时的下界，避免从创世块扫。0 表示未知，前端会退化成近 5000 块。 */
-export const DEPLOY_BLOCK = import.meta.env.VITE_DEPLOY_BLOCK
-  ? BigInt(import.meta.env.VITE_DEPLOY_BLOCK)
-  : 0n;
-
-export const APP_NAME = "SQUEK PUZZLE";
