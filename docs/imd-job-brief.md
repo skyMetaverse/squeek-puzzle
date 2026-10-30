@@ -1,6 +1,8 @@
 # IMD 接入任务书：Squeek Puzzle 进度保存与恢复
 
-当前状态：已支付 0.5 IMD，平台已受理，最近查询状态为 `executing`（执行中），尚未交付。
+当前状态：已支付 0.5 IMD，原任务在第一轮修正后进入 `blocked`，原因为
+`node import_site: runtime_error`，尚未正式交付。修正版源码已下载校验；独立验证和已确认风险见
+[源码验证与阻塞记录](imd-review-progress.md)，平台恢复请求见[草稿](imd-recovery-request.md)。
 
 ## 付款与任务记录
 

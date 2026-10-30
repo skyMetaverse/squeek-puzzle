@@ -1,0 +1,129 @@
+{
+  "jobId": "3075901d-fa05-4596-b659-1ada4de7dc49",
+  "state": "blocked",
+  "blockedReason": "node import_site: runtime_error",
+  "updatedAt": "2026-10-30T13:06:11.630Z",
+  "complete": false,
+  "delivery": {
+    "requested": true,
+    "mode": "repository",
+    "repoUrl": "https://github.com/identity-md-launches/launch-2724-extend-existing-squeek-puzzle",
+    "commit": null,
+    "deliveredAt": null,
+    "failure": null
+  },
+  "source": [
+    {
+      "node": "build_website",
+      "submissionHash": "ac9ad4e54006b91d428af33a551621384a90c14cf681c4f7946aa23492054b9b",
+      "hash": "7ec48d93a23b5f930491839174f0386e57a86aefcda5834586874b497fcd8fb0",
+      "url": "https://api.imd.fun/bundles/7ec48d93a23b5f930491839174f0386e57a86aefcda5834586874b497fcd8fb0",
+      "evaluation": "structural",
+      "profile": "none"
+    }
+  ],
+  "nodes": [
+    {
+      "key": "build_website",
+      "state": "accepted",
+      "attempt": 1,
+      "revisions": 1,
+      "failureReason": null,
+      "updatedAt": "2026-10-30T13:01:20.333Z"
+    },
+    {
+      "key": "design_critic",
+      "state": "waiting",
+      "attempt": 0,
+      "revisions": 1,
+      "failureReason": null,
+      "updatedAt": "2026-10-30T12:50:24.136Z"
+    },
+    {
+      "key": "import_site",
+      "state": "failed",
+      "attempt": 3,
+      "revisions": 1,
+      "failureReason": "runtime_error",
+      "updatedAt": "2026-10-30T13:06:11.630Z"
+    },
+    {
+      "key": "site_content_check",
+      "state": "waiting",
+      "attempt": 0,
+      "revisions": 1,
+      "failureReason": null,
+      "updatedAt": "2026-10-30T12:50:24.136Z"
+    }
+  ],
+  "importAttempts": [
+    {
+      "hash": "9d7fa86af5ce72152017e83247958b20d186e407396fc488a07d0bf2bd7ef9f1",
+      "attempt": 3,
+      "accepted": false,
+      "outcome": "failed",
+      "failureReason": "runtime_error",
+      "failureClass": "machine",
+      "createdAt": "2026-10-30T13:06:11.630Z",
+      "summary": "the task produced no changes; the agent's last message was: Built with **npm** using `npm run build` at the repository root. It ran `npm ci` and the frontend build in `web/`, then copied `web/dist/` to **`dist/`**.\n\nAll 33 progress tests passed. The 688,913-byte export matches the tracked build; source, configuration, and dependencies remain unchanged.\n\nDesktop/mobile browser checks could not run because Chromium requires missing system libraries."
+    },
+    {
+      "hash": "e2cf5f9f0f82da2f6a4273e54d444a2bd15b479c34b2aa31c0cbf160ca970c50",
+      "attempt": 2,
+      "accepted": false,
+      "outcome": "failed",
+      "failureReason": "internal_error",
+      "failureClass": "unclear",
+      "createdAt": "2026-10-30T13:05:08.397Z",
+      "summary": "bundle upload failed (502)"
+    },
+    {
+      "hash": "7cb52510b99eccb1fe122c7da7dee918b8aa007260a8af8ba6fce1c7ffb6364a",
+      "attempt": 1,
+      "accepted": false,
+      "outcome": "failed",
+      "failureReason": "runtime_error",
+      "failureClass": "machine",
+      "createdAt": "2026-10-30T13:03:29.230Z",
+      "summary": "the task produced no changes; the agent's last message was: Built successfully with **npm** using `npm run build` at the repository root. It built `web/dist/` and copied the export to root **`dist/`**, including `dist/index.html`.\n\nAll 33 unit tests and 22 browser scenarios passed, including desktop and 390px mobile checks. The 689 kB export matches the existing tracked build exactly; source, configuration and dependencies remain unchanged."
+    },
+    {
+      "hash": "569938effc1a155791f3522526ca5b42c9c483a48e2ce02a02784fb28a1827cc",
+      "attempt": 1,
+      "accepted": false,
+      "outcome": "failed",
+      "failureReason": "clone_failed",
+      "failureClass": "infrastructure",
+      "createdAt": "2026-10-30T13:01:30.489Z",
+      "summary": "could not restore accepted work: accepted work conflicts with a dependency that changed the same files after it was accepted: Command failed: git -c user.name=IdentityMD Worker -c user.email=worker@identitymd.invalid merge --no-edit -m imd: reapply this node's accepted work 45c32c5b5c177e251b76143ef9aae1cd03d78407\n"
+    },
+    {
+      "hash": "83cdc14e7329f94c6172376dce9b9c791bb72c7442c39aec958447f04d7b1e34",
+      "attempt": 1,
+      "accepted": true,
+      "outcome": "completed",
+      "failureReason": null,
+      "failureClass": null,
+      "createdAt": "2026-10-30T12:31:16.531Z",
+      "summary": "Built the existing source unchanged using **npm** and root **`npm run build`**. Output: **`dist/`**, matching `web/dist/` exactly; 13 files, 688,582 bytes.\n\nAll 33 progress tests passed. Updated `.gitignore` for generated asset hashes.\n\nDesktop/mobile browser verification could not run: Chromium reported missing system libraries. No production deployment was performed."
+    }
+  ],
+  "contentFindings": [
+    {
+      "severity": "medium",
+      "title": "Overlapping board polls can roll back the puzzle and erase in-memory progress",
+      "path": "web/src/hooks/usePuzzle.ts",
+      "line": 67,
+      "description": "The ten-second interval starts load() even while an earlier board() request is pending; cancelled only guards effect cleanup, not older requests within the same effect. An older response can therefore replace a newer level. useSavedPuzzle treats each resulting identity change as a fresh restore. When browser storage is blocked or full, this permanently loses moves made on the newer current puzzle even without a reload. The same behavior is present in dist/assets/index-CT7HPZLO.js (the vv polling function). Guard responses by request generation or serialize polls before updating level and its associated scores.",
+      "reproduction": "Run the actual usePuzzle and useSavedPuzzle hooks with controlled RPC promises and storage that throws SecurityError. Initialize level 100 (certifiedRound 4847, startRound 4800, endRound 4848, seed 0x followed by ab repeated 32 times). Use a 6x6 board with outer-border walls plus an interior wall at cell 28, player 7, boxes at 8/14/20 and targets at 9/15/21. Hold the first ten-second board response with that level-100 snapshot. Let the next poll complete first with level 101 (certifiedRound/startRound 4848, endRound 4896, seed 0x followed by cd repeated 32 times, same board geometry), then make direction 1: the displayed level is 101 and moves are [1]. Resolve the held level-100 response, then complete another poll with level 101. Actual observed sequence: level 101/[1] -> level 100/[] -> level 101/[]. Expected: obsolete responses are ignored, leaving level 101/[1] throughout. Reproduced both with the source hooks and with the hooks extracted from dist/assets/index-CT7HPZLO.js, using the actual bundled React dispatcher and viem HTTP transport/ABI decoder, controlled fetch responses, and storage that throws. The actual transport issued both requests concurrently; its 20-second timeout permits this overlap."
+    },
+    {
+      "severity": "medium",
+      "title": "Current-puzzle leaderboard drops valid scores when settlement is delayed",
+      "path": "web/src/hooks/usePuzzle.ts",
+      "line": 87,
+      "description": "Every refresh rebuilds the leaderboard exclusively from the latest 5,000 blocks. Puzzle expiry is determined by 48 certified SqueekCore rounds, so a settlement delay can keep the same puzzle open for longer than that block window. Older valid Solved events then disappear even though bestMoves and solvedCount still contain them. Later, worse submissions can also be displayed as a player's best after the earlier better event ages out. The exported dist/assets/index-CT7HPZLO.js contains the same lookback calculation. Retrieve the current level's complete event history in bounded RPC chunks, or use equivalent complete indexed data, rather than treating a fixed block-age window as the puzzle lifetime.",
+      "reproduction": "Keep board().index at 100, certifiedRound at 4820, startRound at 4800, endRound at 4848, and solved at 1 while settlement is delayed. Supply a valid Solved(level=100, player=0x1111111111111111111111111111111111111111, moves=7) event at block 12025560 and bestMoves(100, player)=7. At latest block 12030561, load or refresh the page. The actual hook requests fromBlock=12025561 and returns entries=[], causing Leaderboard.tsx to show \"No submissions yet\" while My score shows 7 moves and Solvers shows 1. Expected: the 7-move solver remains ranked until the certified frontier changes the puzzle. Reproduced in the source hook and the production bundle with the actual bundled viem request/response encoder, decoder and Solved event parser. Only fetch responses and React scheduling were controlled; the valid event was ABI-encoded with the indexed level and player topics."
+    }
+  ]
+}
