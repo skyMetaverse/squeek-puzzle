@@ -1,7 +1,26 @@
 # IMD 接入任务书：Squeek Puzzle 进度保存与恢复
 
-当前状态：源码已公开，免费导入、任务检查和报价验证均已通过，尚未付款或生成 IMD Job ID。
-本文和免费报价都不是 Job ID，不能拿来填写 Genesis 提交表。
+当前状态：已支付 0.5 IMD，平台已受理，最近查询状态为 `executing`（执行中），尚未交付。
+
+## 付款与任务记录
+
+| 项目 | 已确认值 |
+|---|---|
+| IMD Job ID | `3075901d-fa05-4596-b659-1ada4de7dc49` |
+| 任务进度 | <https://explorer.imd.fun/jobs/3075901d-fa05-4596-b659-1ada4de7dc49> |
+| Genesis 任务链接 | <https://imd.fun/jobs/3075901d-fa05-4596-b659-1ada4de7dc49> |
+| 付款网络 | Ethereum 主网，chain ID `1` |
+| 付款交易 | <https://etherscan.io/tx/0x271193f4599cb83d9d2f6b97e586ca25847eb3a8607f732acea9d4c25d29b2cf> |
+| 付款区块 | `26305482` |
+| 付款钱包 | `0x00000082Bc916568Cb4479D3a218daFa60eBBA25` |
+| 金额 | `500000000000000000` atomic units，精度 18，即 `0.5 IMD` |
+| 动作 | `job.open@job-1` |
+| 平台付款状态 | `order.status: paid`，`intake.state: admitted` |
+| 任务受理时间 | `2026-10-30T12:11:00.460Z` |
+
+已读取真实交易并解码 `request` calldata，确认任务正文与 `imd-job.request.json` 的 `input` 完全一致，
+固定源码提交和 0.5 IMD 金额也一致。付款成功不代表开发已完成，交付后还需检查源码、测试和预览。
+本文记录的是任务凭证；Squeekchain 的提交与最终批准仍遵循其规则。
 
 ## 任务范围
 
@@ -68,8 +87,8 @@ Leave contracts/ and the current deployed addresses unchanged. Do not add local-
   保留 `web/` / `contracts/` 分目录。按锁文件安装和构建已验证，根目录产物与 `web/dist/` 完全一致。
 - 免费 `/requests/import` 已返回 `ok: true`，固定提交见上方。付款前需要重新获取未过期报价。
 - 这是第一个 IMD 任务，应使用 `job.open`；`job.continue` 只适用于已经存在的 IMD 项目。
-- 付款使用 Genesis 已验证的钱包。此前部署钱包为 `0x00000082Bc916568Cb4479D3a218daFa60eBBA25`，
-  付款前仍需用户确认该钱包是本次项目要绑定的钱包。
+- 本次已由 Genesis 关联钱包 `0x00000082Bc916568Cb4479D3a218daFa60eBBA25` 付款，
+  平台任务的 `paidBy` 与链上付款地址一致。
 - 实时 capabilities 显示 `job.open` 价格为 `500000000000000000` atomic units，即 0.5 IMD（18 decimals）。
   付费构建支持 Ethereum / Robinhood Chain；Sepolia 的测试支付目前只列出 oracle，不支持网站构建。
 - 官方说明：付费购买任务受理，不保证交付成功，也不保证 Squeekchain 最终批准 Genesis 项目。
@@ -93,8 +112,8 @@ Leave contracts/ and the current deployed addresses unchanged. Do not add local-
 
 `facts` 返回空数组。报价支付网络是 `eip155:1`（Ethereum 主网），金额是
 `500000000000000000`，代币 `0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7`，精度 18。
-此次仅验证免费报价，不包含支付签名，未发送 `/submit` 或链上请求，未生成付费任务。
-报价有效期十分钟，实际付款前必须重新校验并报价。
+早期免费验证只创建了报价，没有付款或 Job ID；本次实际链上付款与任务受理结果见上方记录。
+报价有效期十分钟；后续购买其他任务前仍需重新检查与报价。
 
 任务要求交付源码和独立预览；`github: true`、`ipfs: true`，用于保留 IMD 开发成果与任务记录。
 本任务不会自动替换现有 Vercel 生产站。
