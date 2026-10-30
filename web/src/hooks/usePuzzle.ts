@@ -129,5 +129,6 @@ export function usePuzzle(address?: Address): PuzzleState {
     };
   }, [address, nonce, t]);
 
-  return { level, best, entries, loading, error, refresh };
+  // 退出立即隐藏个人成绩，不等待下一次 RPC 返回（断网时同样生效）。
+  return { level, best: address ? best : 0n, entries, loading, error, refresh };
 }
