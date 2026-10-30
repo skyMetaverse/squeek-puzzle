@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #101014;
+  --color-ink-2: #0b0b0f;
+  --color-panel: #17171d;
+  --color-panel-2: #1d1d25;
+  --color-line: #2a2a35;
+  --color-gold: #f2b53c;
+  --color-gold-deep: #b8842a;
+  --color-mint: #5be3b0;
+  --color-muted: #8b8b9c;
+
+  --font-display: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-ink-2);
+  color: #ededf2;
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 点阵底纹：呼应 Squeekchain 官网的 dot-matrix 视觉 */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+}
+
+::selection {
+  background: rgba(242, 181, 60, 0.35);
+}

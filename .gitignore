@@ -1,0 +1,23 @@
+# 依赖与构建产物
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Foundry 依赖与产物（cache 里会缓存私钥，绝不入库；lib 用 forge install 拉取）
+contracts/lib/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# 环境变量
+.env
+.env.*
+!.env.example
+
+# 系统
+.DS_Store
+*.log
+
+# TypeScript 增量构建缓存
+*.tsbuildinfo
