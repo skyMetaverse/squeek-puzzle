@@ -64,12 +64,26 @@ cd ../web && E2E_PRIVATE_KEY=<anvil 打印的第一个私钥> bun run e2e
 cd ../web && npm run build
 ```
 
+## 从仓库根目录构建（IMD 导入入口）
+
+IMD 的源码导入会从仓库根目录查找 `package.json` 和网站产物。根目录现在提供一个轻量入口：
+
+```bash
+npm ci
+npm run build
+```
+
+它按 `web/package-lock.json` 安装前端依赖，在 `web/` 运行类型检查和 Vite 构建，
+再把成功产物复制到根目录 `dist/`，供 IMD 等托管平台发布。
+前端与合约仍分目录；Vercel CLI 仍在 `web/` 中运行，使用原有构建命令。
+根目录没有新增第三方依赖。
+
 ## 部署到 Vercel
 
 1. Vercel 新建项目，导入本仓库，**Root Directory 选 `web`**。
 2. Build Command `npm run build`，Output Directory `dist`（Vite 默认，Vercel 会自动识别）。
 3. **不需要配置环境变量**：默认就是 Sepolia 正式部署。需要覆盖时再填（见 `web/.env.example`）：
-   `VITE_CHAIN_ID` / `VITE_RPC_URL` / `VITE_PUZZLE_ADDRESS` / `VITE_CORE_ADDRESS` / `VITE_DEPLOY_BLOCK`。
+   `VITE_RPC_URL` / `VITE_PUZZLE_ADDRESS` / `VITE_CORE_ADDRESS` / `VITE_DEPLOY_BLOCK`。
 4. 先按 `contracts/README.md` 的「部署到测试网」把合约部署到 Sepolia（用 `cast wallet import` +
    `--account`，私钥不会出现在终端里），再把地址填进去。
 
