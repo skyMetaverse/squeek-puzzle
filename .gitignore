@@ -21,3 +21,6 @@ contracts/broadcast/
 
 # TypeScript 增量构建缓存
 *.tsbuildinfo
+
+# Vercel CLI 本地链接信息
+.vercel

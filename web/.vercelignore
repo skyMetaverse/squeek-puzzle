@@ -1,0 +1,5 @@
+# 部署时不需要上传的东西（Vercel 会在云端重新安装依赖并构建）
+node_modules
+dist
+scripts
+.env.local
